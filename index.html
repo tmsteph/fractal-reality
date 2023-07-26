@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fractal Simulation with three.js</title>
+  <style>
+    #canvas-container {
+      width: 50%;
+      height: 50%;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://threejs.org/examples/jsm/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div>
+    <button onclick="changeFractal(lorenzAttractor)">Lorenz Attractor</button>
+    <button onclick="changeFractal(yourFractal)">Your Fractal</button>
+    <!-- Add more buttons for additional fractals -->
+    <br>
+    <label for="sigma">Sigma:</label>
+    <input type="range" id="sigma" min="1" max="50" step="1" value="10">
+    <label for="rho">Rho:</label>
+    <input type="range" id="rho" min="1" max="50" step="1" value="28">
+    <label for="beta">Beta:</label>
+    <input type="range" id="beta" min="1" max="50" step="1" value="8">
+  </div>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+    const canvasWidth = window.innerWidth * 0.5;
+    const canvasHeight = window.innerHeight * 0.5;
+    renderer.setSize(canvasWidth, canvasHeight);
+    renderer.setClearColor(0x000000); // Background color for the canvas (black)
+
+    const canvasContainer = document.getElementById('canvas-container');
+    canvasContainer.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.update();
+
+    // Add a point light to illuminate the scene
+    const light = new THREE.PointLight(0xffffff, 1, 100);
+    light.position.set(0, 0, 10);
+    scene.add(light);
+
+    // Fractal function options
+    function lorenzAttractor(x, y, z) {
+      const sigma = parseFloat(document.getElementById('sigma').value);
+      const rho = parseFloat(document.getElementById('rho').value);
+      const beta = parseFloat(document.getElementById('beta').value);
+
+      const dx = sigma * (y - x);
+      const dy = x * (rho - z) - y;
+      const dz = x * y - beta * z;
+
+      return new THREE.Vector3(dx, dy, dz);
+    }
+
+    function yourFractal(x, y, z) {
+      // Add your custom fractal function here
+      // You can use sliders or other inputs to control the parameters
+    }
+
+    // Current selected fractal function
+    let selectedFractal = lorenzAttractor;
+    const fractalGroup = new THREE.Group();
+    scene.add(fractalGroup);
+
+    const numSteps = 10000;
+    const stepSize = 0.01;
+    let position = new THREE.Vector3(0, 0, 0);
+
+    function updateFractal() {
+      // Remove previous fractal points
+      while (fractalGroup.children.length) {
+        fractalGroup.remove(fractalGroup.children[0]);
+      }
+
+      for (let i = 0; i < numSteps; i++) {
+        // Update the position using the selected fractal function
+        position.add(selectedFractal(position.x, position.y, position.z).multiplyScalar(stepSize));
+        
+        // Create a 3D point representing the position
+        const geometry = new THREE.SphereGeometry(0.1);
+        const material = new THREE.MeshPhongMaterial({ color: 0xff0000 }); // Use MeshPhongMaterial for lighting
+        const sphere = new THREE.Mesh(geometry, material);
+        sphere.position.copy(position);
+        fractalGroup.add(sphere);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function changeFractal(fractalFunction) {
+      selectedFractal = fractalFunction;
+      updateFractal();
+    }
+
+    // Set the camera position and look at the origin
+    camera.position.set(0, 0, 10); // Changed the camera position to be closer to the fractal
+    camera.lookAt(0, 0, 0);
+
+    // Render the scene
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update(); // Update OrbitControls
+      updateFractal(); // Moved the updateFractal call to the animate function
+    }
+    animate();
+  </script>
+</body>
+</html>
+
